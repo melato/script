@@ -35,6 +35,9 @@ func (t *Cmd) Run() {
 	if t.IsRun {
 		return
 	}
+	if t.script.HasError() {
+		return
+	}
 	if t.Cmd.Stdout == nil {
 		t.Cmd.Stdout = os.Stdout
 	}
@@ -43,18 +46,33 @@ func (t *Cmd) Run() {
 	} else {
 		t.Cmd.Stderr = t.Cmd.Stdout
 	}
-	first := t.Cmd
-	var commands []*exec.Cmd
+	var commands []*Cmd
 	for c := t; c != nil; c = c.inputCmd {
-		first = c.Cmd
-		commands = append(commands, c.Cmd)
+		commands = append(commands, c)
 	}
-	first.Stdin = os.Stdin
 	for i, j := 0, len(commands)-1; i < j; i, j = i+1, j-1 {
 		commands[i], commands[j] = commands[j], commands[i]
 	}
-	t.script.checkError(Pipe(commands...))
-	//t.script.checkError(t.Cmd.Run())
+	commands[0].Cmd.Stdin = os.Stdin
+	n := len(commands)
+	for i := 0; i < n-1; i++ {
+		var err error
+		commands[i+1].Cmd.Stdin, err = commands[i].Cmd.StdoutPipe()
+		if t.script.checkError(err) {
+			return
+		}
+	}
+	for _, c := range commands {
+		if t.script.checkError(c.Cmd.Start()) {
+			return
+		}
+	}
+	for _, c := range commands {
+		if t.script.checkError(c.Cmd.Wait()) {
+			return
+		}
+	}
+	return
 }
 
 func (t *Cmd) ToWriter(out io.Writer) {

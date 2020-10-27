@@ -7,8 +7,7 @@ import (
 )
 
 func main() {
-	var s script.Script
-	s.Trace = true
+	s := script.Script{Trace: true}
 
 	s.Cmd("ls").ToFile("ls.out")
 	pwd := s.Cmd("pwd").ToString()
