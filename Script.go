@@ -10,7 +10,6 @@ Split output lines
 */
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -26,6 +25,7 @@ type Script struct {
 
 type Cmd struct {
 	Cmd         *exec.Cmd
+	inputCmd    *Cmd
 	IsRun       bool
 	mergeStderr bool
 	script      *Script
@@ -35,10 +35,26 @@ func (t *Cmd) Run() {
 	if t.IsRun {
 		return
 	}
+	if t.Cmd.Stdout == nil {
+		t.Cmd.Stdout = os.Stdout
+	}
 	if t.mergeStderr {
 		t.Cmd.Stderr = t.Cmd.Stdout
+	} else {
+		t.Cmd.Stderr = t.Cmd.Stdout
 	}
-	t.script.checkError(t.Cmd.Run())
+	first := t.Cmd
+	var commands []*exec.Cmd
+	for c := t; c != nil; c = c.inputCmd {
+		first = c.Cmd
+		commands = append(commands, c.Cmd)
+	}
+	first.Stdin = os.Stdin
+	for i, j := 0, len(commands)-1; i < j; i, j = i+1, j-1 {
+		commands[i], commands[j] = commands[j], commands[i]
+	}
+	t.script.checkError(Pipe(commands...))
+	//t.script.checkError(t.Cmd.Run())
 }
 
 func (t *Cmd) ToWriter(out io.Writer) {
@@ -75,8 +91,9 @@ func (t *Cmd) ToLines() []string {
 	return BytesToLines(t.ToBytes())
 }
 
-func (t *Cmd) Pipe(x *Cmd) {
-
+func (t *Cmd) Pipe(to *Cmd) *Cmd {
+	to.inputCmd = t
+	return to
 }
 
 func (t *Script) HasError() bool {
@@ -110,24 +127,9 @@ func (t *Script) Cmd(name string, args ...string) *Cmd {
 		fmt.Println(path, cargs)
 	}
 	r.Cmd = &exec.Cmd{Path: path, Args: cargs}
-	r.Cmd.Stdin = os.Stdin
-	r.Cmd.Stdout = os.Stdout
-	r.Cmd.Stderr = os.Stderr
 	return r
 }
 
 func (t *Cmd) MergeStderr() {
 	t.mergeStderr = true
-}
-
-func BytesToLines(out []byte) []string {
-	scanner := bufio.NewScanner(bytes.NewReader(out))
-	var lines []string
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-	return lines
 }
