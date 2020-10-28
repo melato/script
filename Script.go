@@ -1,12 +1,13 @@
 package script
 
 /**
-scripting utilities
-Run programs
-Run pipelines
-Redirect output to file
-Copy output to memory
-Split output lines
+scripting utilities:
+- Run programs
+- Run pipelines
+- Redirect output to file
+- Copy output to a string or []string
+
+- Maintains an internal error state, so the user does not have to check for an error after running each command.
 */
 
 import (
@@ -19,8 +20,8 @@ import (
 )
 
 type Script struct {
-	Trace bool `usage:"print call arguments to stdout"`
-	Error error
+	Trace bool  // print exec arguments to stdout
+	Error error // The first error encountered.  If not nil, do not execute anything else.
 }
 
 type Cmd struct {
@@ -31,6 +32,7 @@ type Cmd struct {
 	script      *Script
 }
 
+/** Run a command or pipeline */
 func (t *Cmd) Run() {
 	if t.IsRun {
 		return
@@ -75,6 +77,7 @@ func (t *Cmd) Run() {
 	return
 }
 
+/** Run and redirect output to a Writer */
 func (t *Cmd) ToWriter(out io.Writer) {
 	if t.script.HasError() {
 		return
@@ -83,6 +86,7 @@ func (t *Cmd) ToWriter(out io.Writer) {
 	t.Run()
 }
 
+/** Run and redirect output to a file */
 func (t *Cmd) ToFile(file string) {
 	if t.script.HasError() {
 		return
@@ -95,29 +99,37 @@ func (t *Cmd) ToFile(file string) {
 	t.ToWriter(f)
 }
 
+/** Run and return the output */
 func (t *Cmd) ToBytes() []byte {
 	var buf bytes.Buffer
 	t.ToWriter(&buf)
 	return buf.Bytes()
 }
 
+/** Run and return the output as a string */
 func (t *Cmd) ToString() string {
 	return strings.TrimSpace(string(t.ToBytes()))
 }
 
+/** Run and return the output as a []string */
 func (t *Cmd) ToLines() []string {
 	return BytesToLines(t.ToBytes())
 }
 
+/** Run and return the output as a []string */
 func (t *Cmd) Pipe(to *Cmd) *Cmd {
 	to.inputCmd = t
 	return to
 }
 
+/** Return true if an error has happened */
 func (t *Script) HasError() bool {
 	return t.Error != nil
 }
 
+/** Check if the argument is an error, or whether the script already has an error.
+  If the argument is an error and it is the first error encountered, it becomes the script's error.
+  Return true if the script has an error, either the given error or a previous one.  */
 func (t *Script) checkError(err error) bool {
 	if t.HasError() {
 		return true
@@ -129,6 +141,7 @@ func (t *Script) checkError(err error) bool {
 	return false
 }
 
+/** Create a command without running it.  The command can be executed or piped to another command. */
 func (t *Script) Cmd(name string, args ...string) *Cmd {
 	r := &Cmd{}
 	r.script = t
