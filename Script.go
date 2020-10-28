@@ -60,17 +60,17 @@ func (t *Cmd) Run() {
 	for i := 0; i < n-1; i++ {
 		var err error
 		commands[i+1].Cmd.Stdin, err = commands[i].Cmd.StdoutPipe()
-		if t.script.checkError(err) {
+		if t.script.InError(err) {
 			return
 		}
 	}
 	for _, c := range commands {
-		if t.script.checkError(c.Cmd.Start()) {
+		if t.script.InError(c.Cmd.Start()) {
 			return
 		}
 	}
 	for _, c := range commands {
-		if t.script.checkError(c.Cmd.Wait()) {
+		if t.script.InError(c.Cmd.Wait()) {
 			return
 		}
 	}
@@ -92,7 +92,7 @@ func (t *Cmd) ToFile(file string) {
 		return
 	}
 	f, err := os.Create(file)
-	if t.script.checkError(err) {
+	if t.script.InError(err) {
 		return
 	}
 	defer f.Close()
@@ -130,7 +130,7 @@ func (t *Script) HasError() bool {
 /** Check if the argument is an error, or whether the script already has an error.
   If the argument is an error and it is the first error encountered, it becomes the script's error.
   Return true if the script has an error, either the given error or a previous one.  */
-func (t *Script) checkError(err error) bool {
+func (t *Script) InError(err error) bool {
 	if t.HasError() {
 		return true
 	}
@@ -149,7 +149,7 @@ func (t *Script) Cmd(name string, args ...string) *Cmd {
 		return r
 	}
 	path, err := exec.LookPath(name)
-	if t.checkError(err) {
+	if t.InError(err) {
 		return r
 	}
 	cargs := []string{name}
