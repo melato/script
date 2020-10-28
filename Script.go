@@ -161,6 +161,11 @@ func (t *Script) Cmd(name string, args ...string) *Cmd {
 	return r
 }
 
+/** Create a command and run it */
+func (t *Script) Run(name string, args ...string) {
+	t.Cmd(name, args...).Run()
+}
+
 func (t *Cmd) MergeStderr() {
 	t.mergeStderr = true
 }
