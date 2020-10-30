@@ -116,7 +116,6 @@ func (t *Cmd) ToLines() []string {
 	return BytesToLines(t.ToBytes())
 }
 
-/** Run and return the output as a []string */
 func (t *Cmd) Pipe(to *Cmd) *Cmd {
 	to.inputCmd = t
 	return to
@@ -164,6 +163,10 @@ func (t *Script) Cmd(name string, args ...string) *Cmd {
 /** Create a command and run it */
 func (t *Script) Run(name string, args ...string) {
 	t.Cmd(name, args...).Run()
+}
+
+func (t *Cmd) PipeTo(name string, args ...string) *Cmd {
+	return t.Pipe(t.script.Cmd(name, args...))
 }
 
 func (t *Cmd) MergeStderr() {
