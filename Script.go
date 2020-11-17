@@ -172,3 +172,7 @@ func (t *Cmd) PipeTo(name string, args ...string) *Cmd {
 func (t *Cmd) MergeStderr() {
 	t.mergeStderr = true
 }
+
+func (t *Cmd) Script() *Script {
+	return t.script
+}
