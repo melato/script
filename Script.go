@@ -26,6 +26,8 @@ type Script struct {
 
 type Cmd struct {
 	Cmd         *exec.Cmd
+	Name        string
+	Args        []string
 	inputCmd    *Cmd
 	IsRun       bool
 	mergeStderr bool
@@ -66,11 +68,13 @@ func (t *Cmd) Run() {
 	}
 	for _, c := range commands {
 		if t.script.InError(c.Cmd.Start()) {
+			fmt.Println("start error", c.Name, c.Args)
 			return
 		}
 	}
 	for _, c := range commands {
 		if t.script.InError(c.Cmd.Wait()) {
+			fmt.Println("wait error", c.Name, c.Args)
 			return
 		}
 	}
@@ -142,7 +146,7 @@ func (t *Script) InError(err error) bool {
 
 /** Create a command without running it.  The command can be executed or piped to another command. */
 func (t *Script) Cmd(name string, args ...string) *Cmd {
-	r := &Cmd{}
+	r := &Cmd{Name: name, Args: args}
 	r.script = t
 	if t.Error != nil {
 		return r
