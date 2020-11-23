@@ -52,23 +52,24 @@ func (t *Cmd) Run() {
 	}
 	var commands []*Cmd
 	for c := t; c != nil; c = c.inputCmd {
+		c.Cmd.Stderr = os.Stderr
+		if c.inputCmd != nil {
+			var err error
+			c.Cmd.Stdin, err = c.inputCmd.Cmd.StdoutPipe()
+			if t.script.InError(err) {
+				return
+			}
+		} else {
+			c.Cmd.Stdin = os.Stdin
+		}
 		commands = append(commands, c)
 	}
-	/* reverse order */
+	/* reverse the order */
 	for i, j := 0, len(commands)-1; i < j; i, j = i+1, j-1 {
 		commands[i], commands[j] = commands[j], commands[i]
 	}
-	commands[0].Cmd.Stdin = os.Stdin
-	n := len(commands)
-	for i := 0; i < n-1; i++ {
-		var err error
-		commands[i+1].Cmd.Stdin, err = commands[i].Cmd.StdoutPipe()
-		if t.script.InError(err) {
-			return
-		}
-	}
+
 	for _, c := range commands {
-		c.Cmd.Stderr = os.Stderr
 		if t.script.InError(c.Cmd.Start()) {
 			if t.script.Trace {
 				fmt.Fprintln(os.Stderr, "start error", c.Name, c.Args)
