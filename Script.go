@@ -54,6 +54,7 @@ func (t *Cmd) Run() {
 	for c := t; c != nil; c = c.inputCmd {
 		commands = append(commands, c)
 	}
+	/* reverse order */
 	for i, j := 0, len(commands)-1; i < j; i, j = i+1, j-1 {
 		commands[i], commands[j] = commands[j], commands[i]
 	}
@@ -67,14 +68,19 @@ func (t *Cmd) Run() {
 		}
 	}
 	for _, c := range commands {
+		c.Cmd.Stderr = os.Stderr
 		if t.script.InError(c.Cmd.Start()) {
-			fmt.Println("start error", c.Name, c.Args)
+			if t.script.Trace {
+				fmt.Fprintln(os.Stderr, "start error", c.Name, c.Args)
+			}
 			return
 		}
 	}
 	for _, c := range commands {
 		if t.script.InError(c.Cmd.Wait()) {
-			fmt.Println("wait error", c.Name, c.Args)
+			if t.script.Trace {
+				fmt.Fprintln(os.Stderr, "wait error", c.Name, c.Args)
+			}
 			return
 		}
 	}
