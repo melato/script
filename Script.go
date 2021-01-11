@@ -117,6 +117,12 @@ func (t *Cmd) ToBytes() []byte {
 	return buf.Bytes()
 }
 
+/** Run and ignore the output.  Return success or failure. */
+func (t *Cmd) ToNull() bool {
+	t.ToWriter(&NullWriter{})
+	return t.Script().Error == nil
+}
+
 /** Run and return the output as a string */
 func (t *Cmd) ToString() string {
 	return strings.TrimSpace(string(t.ToBytes()))
