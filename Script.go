@@ -75,17 +75,11 @@ func (t *Cmd) Run() {
 
 	for _, c := range commands {
 		if t.script.InError(c.Cmd.Start()) {
-			if t.script.Trace {
-				fmt.Fprintln(os.Stderr, "start error", c.Name, c.Args)
-			}
 			return
 		}
 	}
 	for _, c := range commands {
 		if t.script.InError(c.Cmd.Wait()) {
-			if t.script.Trace {
-				fmt.Fprintln(os.Stderr, "wait error", c.Name, c.Args)
-			}
 			return
 		}
 	}
