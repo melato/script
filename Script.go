@@ -20,8 +20,9 @@ import (
 )
 
 type Script struct {
-	Trace bool  // print exec arguments to stdout
-	Error error // The first error encountered.  If not nil, do not execute anything else.
+	Trace  bool // print exec arguments to stdout
+	DryRun bool
+	Error  error // The first error encountered.  If not nil, do not execute anything else.
 }
 
 type Cmd struct {
@@ -29,14 +30,13 @@ type Cmd struct {
 	Name        string
 	Args        []string
 	inputCmd    *Cmd
-	IsRun       bool
 	mergeStderr bool
 	script      *Script
 }
 
 /** Run a command or pipeline */
 func (t *Cmd) Run() {
-	if t.IsRun {
+	if t.script.DryRun {
 		return
 	}
 	if t.script.HasError() {
@@ -45,21 +45,25 @@ func (t *Cmd) Run() {
 	if t.Cmd.Stdout == nil {
 		t.Cmd.Stdout = os.Stdout
 	}
-	if t.mergeStderr {
-		t.Cmd.Stderr = t.Cmd.Stdout
-	} else {
-		t.Cmd.Stderr = t.Cmd.Stdout
+	if t.Cmd.Stderr == nil {
+		if t.mergeStderr {
+			t.Cmd.Stderr = t.Cmd.Stdout
+		} else {
+			t.Cmd.Stderr = os.Stderr
+		}
 	}
 	var commands []*Cmd
 	for c := t; c != nil; c = c.inputCmd {
-		c.Cmd.Stderr = os.Stderr
+		if t.Cmd.Stderr == nil {
+			t.Cmd.Stderr = os.Stderr
+		}
 		if c.inputCmd != nil {
 			var err error
 			c.Cmd.Stdin, err = c.inputCmd.Cmd.StdoutPipe()
 			if t.script.InError(err) {
 				return
 			}
-		} else {
+		} else if c.Cmd.Stdin == nil {
 			c.Cmd.Stdin = os.Stdin
 		}
 		commands = append(commands, c)
@@ -146,15 +150,27 @@ func (t *Script) HasError() bool {
 /** Check if the argument is an error, or whether the script already has an error.
   If the argument is an error and it is the first error encountered, it becomes the script's error.
   Return true if the script has an error, either the given error or a previous one.  */
-func (t *Script) InError(err error) bool {
-	if t.HasError() {
-		return true
-	}
-	if err != nil {
+func (t *Script) AddError(err error) {
+	if t.Error == nil {
 		t.Error = err
-		return true
 	}
-	return false
+}
+
+/** Check if the argument is an error, or whether the script already has an error.
+  If the argument is an error and it is the first error encountered, it becomes the script's error.
+  Return true if the script has an error, either the given error or a previous one.  */
+func (t *Script) InError(err error) bool {
+	t.AddError(err)
+	return t.HasError()
+}
+
+func (t *Cmd) Print() {
+	args := make([]interface{}, 1+len(t.Args))
+	args[0] = t.Name
+	for i, arg := range t.Args {
+		args[1+i] = arg
+	}
+	fmt.Println(args...)
 }
 
 /** Create a command without running it.  The command can be executed or piped to another command. */
@@ -171,7 +187,7 @@ func (t *Script) Cmd(name string, args ...string) *Cmd {
 	cargs := []string{name}
 	cargs = append(cargs, args...)
 	if t.Trace {
-		fmt.Println(path, cargs)
+		r.Print()
 	}
 	r.Cmd = &exec.Cmd{Path: path, Args: cargs}
 	return r
@@ -186,8 +202,9 @@ func (t *Cmd) PipeTo(name string, args ...string) *Cmd {
 	return t.Pipe(t.script.Cmd(name, args...))
 }
 
-func (t *Cmd) MergeStderr() {
+func (t *Cmd) MergeStderr() *Cmd {
 	t.mergeStderr = true
+	return t
 }
 
 func (t *Cmd) Script() *Script {
