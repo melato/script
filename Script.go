@@ -86,6 +86,12 @@ func (t *Cmd) Run() {
 	return
 }
 
+/** Set Cmd directory */
+func (t *Cmd) Dir(dir string) *Cmd {
+	t.Cmd.Dir = dir
+	return t
+}
+
 /** Run and redirect output to a Writer */
 func (t *Cmd) ToWriter(out io.Writer) {
 	if t.script.HasError() {
