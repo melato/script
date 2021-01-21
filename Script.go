@@ -103,6 +103,10 @@ func (t *Cmd) ToWriter(out io.Writer) {
 
 /** Run and redirect output to a file */
 func (t *Cmd) ToFile(file string) {
+	if t.script.DryRun {
+		fmt.Printf(" > %s\n", file)
+		return
+	}
 	if t.script.HasError() {
 		return
 	}
