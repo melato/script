@@ -127,6 +127,7 @@ func (t *Cmd) ToLines() []string {
 
 func (t *Cmd) Pipe(to *Cmd) *Cmd {
 	to.inputCmd = t
+  t.script = to.script // use the same script, the one we return with.
 	return to
 }
 
