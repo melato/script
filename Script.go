@@ -1,7 +1,13 @@
 package script
 
+import (
+	"os/exec"
+)
+
 /**
-scripting utilities:
+  Script is used to run script.Cmd which are convenience wrappers around exec.Cmd
+  Deprecated:  Use the lighterweight Run(), which uses exec.Cmd directly.
+  scripting utilities:
 - Run programs
 - Run pipelines
 - Redirect output to file
@@ -9,10 +15,6 @@ scripting utilities:
 
 - Maintains an internal error state, so the user does not have to check for an error after running each command.
 */
-
-import (
-	"os/exec"
-)
 
 type Script struct {
 	Trace  bool // print exec arguments to stdout
@@ -31,7 +33,7 @@ func (t *Script) InError(err error) bool {
 func (t *Script) Command(name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
 	if t.Trace {
-		Println(cmd)
+		println("", cmd)
 	}
 	return cmd
 }
