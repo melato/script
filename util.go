@@ -3,16 +3,7 @@ package script
 import (
 	"bufio"
 	"bytes"
-	"io"
 )
-
-type NullWriter struct {
-	io.Writer
-}
-
-func (t *NullWriter) Write(p []byte) (n int, err error) {
-	return len(p), nil
-}
 
 func BytesToLines(out []byte) []string {
 	scanner := bufio.NewScanner(bytes.NewReader(out))

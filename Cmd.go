@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -111,7 +112,7 @@ func (t *Cmd) ToBytes() []byte {
 
 /** Run and ignore the output.  Return success or failure. */
 func (t *Cmd) ToNull() bool {
-	t.ToWriter(&NullWriter{})
+	t.ToWriter(ioutil.Discard)
 	return t.Script().Error == nil
 }
 
@@ -127,7 +128,7 @@ func (t *Cmd) ToLines() []string {
 
 func (t *Cmd) Pipe(to *Cmd) *Cmd {
 	to.inputCmd = t
-  t.script = to.script // use the same script, the one we return with.
+	t.script = to.script // use the same script, the one we return with.
 	return to
 }
 
