@@ -38,10 +38,13 @@ func Print(cmd ...*exec.Cmd) {
 	if n == 0 {
 		return
 	}
-	for _, c := range cmd[0 : n-1] {
-		println("#", c, "|")
+	for i, c := range cmd {
+		var prefix string
+		if i > 0 {
+			prefix = "| "
+		}
+		println(prefix, c, "")
 	}
-	println("#", cmd[n-1])
 }
 
 /** Run 0 or more commands.  If there are more than 1 command, pipe Stdout of each command to Stdin of the next command.
