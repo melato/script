@@ -47,6 +47,14 @@ func Print(cmd ...*exec.Cmd) {
 	}
 }
 
+func Command(name string, arg ...string) *exec.Cmd {
+	cmd := exec.Command(name, arg...)
+	if Trace {
+		Print(cmd)
+	}
+	return cmd
+}
+
 /** Run 0 or more commands.  If there are more than 1 command, pipe Stdout of each command to Stdin of the next command.
   Any unset Stderr is set to os.Stderr
   Stdin of the first command is set to os.Stdin, unless it is already set
