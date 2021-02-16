@@ -12,8 +12,6 @@ import (
 
 type Cmd struct {
 	Cmd         *exec.Cmd
-	Name        string
-	Args        []string
 	inputCmd    *Cmd
 	mergeStderr bool
 	script      *Script
@@ -146,32 +144,16 @@ func (t *Script) AddError(err error) {
 	}
 }
 func (t *Cmd) Print() {
-	args := make([]interface{}, 1+len(t.Args))
-	args[0] = t.Name
-	for i, arg := range t.Args {
-		args[1+i] = arg
-	}
-	fmt.Println(args...)
+	Print(t.Cmd)
 }
 
 /** Create a command without running it.  The command can be executed or piped to another command. */
 func (t *Script) Cmd(name string, args ...string) *Cmd {
-	r := &Cmd{Name: name, Args: args}
-	r.script = t
-	if t.Error != nil {
-		return r
-	}
-	path, err := exec.LookPath(name)
-	if t.InError(err) {
-		return r
-	}
-	cargs := []string{name}
-	cargs = append(cargs, args...)
+	cmd := &Cmd{Cmd: exec.Command(name, args...)}
 	if t.Trace {
-		r.Print()
+		Print(cmd.Cmd)
 	}
-	r.Cmd = &exec.Cmd{Path: path, Args: cargs}
-	return r
+	return cmd
 }
 
 /** Create a command and run it */
