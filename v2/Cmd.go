@@ -10,32 +10,33 @@ import (
 	"strings"
 )
 
-// Cmd wraps exec.Cmd and adds convenience methods for redirecting its output in various ways.
+// Cmd wraps exec.Cmd and adds convenience methods for redirecting stdin, stdout in various ways.
 type Cmd struct {
-	Cmd         *exec.Cmd
-	Script      *Script
-	stdin       input
-	mergeStderr bool
+	Cmd           *exec.Cmd
+	Script        *Script
+	stdin         input
+	combineOutput bool
 }
 
-/** Set Cmd directory */
+// Dir sets Cmd.Dir
 func (t *Cmd) Dir(dir string) *Cmd {
 	t.Cmd.Dir = dir
 	return t
 }
 
-/** Set Cmd directory */
+// InputString sets Cmd.Stdin to the given string input
 func (t *Cmd) InputString(text string) *Cmd {
 	t.stdin = &stringInput{Text: text}
 	return t
 }
 
-/** Set Cmd directory */
+// InputString sets Cmd.Stdin to the given file
 func (t *Cmd) InputFile(file string) *Cmd {
 	t.stdin = &fileInput{Path: file}
 	return t
 }
 
+// Run runs and/or prints the command, applying any specified redirections
 func (t *Cmd) Run() {
 	if t.Script.HasError() {
 		return
@@ -70,19 +71,19 @@ func (t *Cmd) Run() {
 	}
 }
 
-/** Run and redirect output to a Writer */
+// ToWriter redirects the output to an io.Writer and runs the command
 func (t *Cmd) ToWriter(out io.Writer) {
 	if t.Script.HasError() {
 		return
 	}
 	t.Cmd.Stdout = out
-	if t.mergeStderr {
+	if t.combineOutput {
 		t.Cmd.Stderr = out
 	}
 	t.Run()
 }
 
-/** Run and redirect output to a file */
+// ToFile redirects the output to a file, runs the command, and closes the file
 func (t *Cmd) ToFile(file string) {
 	if t.Script.HasError() {
 		return
@@ -100,29 +101,30 @@ func (t *Cmd) ToFile(file string) {
 	t.ToWriter(f)
 }
 
-/** Run and return the output */
+// ToBytes runs the command and returns its stdout as a []byte
 func (t *Cmd) ToBytes() []byte {
 	var buf bytes.Buffer
 	t.ToWriter(&buf)
 	return buf.Bytes()
 }
 
-/** Run and ignore the output.  Return success or failure. */
+// ToNull runs the command and discards its output
 func (t *Cmd) ToNull() {
 	t.ToWriter(ioutil.Discard)
 }
 
-/** Run and return the output as a string */
+// ToString runs the command and returns its output as a string
 func (t *Cmd) ToString() string {
 	return strings.TrimSpace(string(t.ToBytes()))
 }
 
-/** Run and return the output as a []string */
+// ToLines runs the command, splits its output into lines, and returns the lines
 func (t *Cmd) ToLines() []string {
 	return BytesToLines(t.ToBytes())
 }
 
-func (t *Cmd) MergeStderr() *Cmd {
-	t.mergeStderr = true
+// CombineOutput redirects stderr to stdout.  If the output is returned or redirected to a file, it includes both stdout and stderr
+func (t *Cmd) CombineOutput() *Cmd {
+	t.combineOutput = true
 	return t
 }
