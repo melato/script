@@ -16,21 +16,23 @@ import (
 type Script struct {
 	Trace  bool // print exec arguments to stdout
 	DryRun bool
-	Error  error // The first error encountered.  If not nil, do not execute anything else.
+	Errors Errors
 }
 
 /** Return true if an error has happened */
 func (t *Script) HasError() bool {
-	return t.Error != nil
+	return t.Errors.HasError()
+}
+
+func (t *Script) Error() error {
+	return t.Errors.Error()
 }
 
 /** Check if the argument is an error, or whether the script already has an error.
   If the argument is an error and it is the first error encountered, it becomes the script's error.
   Return true if the script has an error, either the given error or a previous one.  */
 func (t *Script) AddError(err error) {
-	if t.Error == nil {
-		t.Error = err
-	}
+	t.Errors.Handle(err)
 }
 
 /** Cmd creates a Cmd wrapper. */
