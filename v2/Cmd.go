@@ -67,8 +67,14 @@ func (t *Cmd) Run() {
 			return
 		}
 		defer t.stdin.Close()
-		t.Script.AddError(Run(t.Cmd))
 	}
+	if t.combineOutput {
+		if t.Cmd.Stdout == nil {
+			t.Cmd.Stdout = os.Stdout
+		}
+		t.Cmd.Stderr = t.Cmd.Stdout
+	}
+	t.Script.AddError(Run(t.Cmd))
 }
 
 // ToWriter redirects the output to an io.Writer and runs the command
