@@ -14,6 +14,7 @@ import (
 type Cmd struct {
 	Cmd         *exec.Cmd
 	Script      *Script
+	stdin       input
 	mergeStderr bool
 }
 
@@ -23,8 +24,50 @@ func (t *Cmd) Dir(dir string) *Cmd {
 	return t
 }
 
+/** Set Cmd directory */
+func (t *Cmd) InputString(text string) *Cmd {
+	t.stdin = &stringInput{Text: text}
+	return t
+}
+
+/** Set Cmd directory */
+func (t *Cmd) InputFile(file string) *Cmd {
+	t.stdin = &fileInput{Path: file}
+	return t
+}
+
 func (t *Cmd) Run() {
-	t.Script.RunCmd(t.Cmd)
+	if t.Script.HasError() {
+		return
+	}
+	if t.Script.Trace {
+		var suffix string
+		var text []string
+		if t.stdin != nil {
+			text = t.stdin.TraceStrings()
+			if len(text) > 0 {
+				suffix = text[0]
+				text = text[1:]
+			}
+		}
+		fmt.Printf("%s%s\n", t.Cmd.String(), suffix)
+		for _, s := range text {
+			fmt.Println(s)
+		}
+	}
+	if t.Script.DryRun {
+		return
+	}
+	if t.stdin != nil {
+		var err error
+		t.Cmd.Stdin, err = t.stdin.Open()
+		if err != nil {
+			t.Script.AddError(err)
+			return
+		}
+		defer t.stdin.Close()
+		t.Script.AddError(Run(t.Cmd))
+	}
 }
 
 /** Run and redirect output to a Writer */
