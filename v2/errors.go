@@ -45,6 +45,10 @@ func (t *Errors) HasError() bool {
 	return len(t.List) > 0
 }
 
+func (t *Errors) Clear() {
+	t.List = nil
+}
+
 // Return the first error
 func (t *Errors) First() error {
 	if len(t.List) > 0 {
