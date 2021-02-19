@@ -36,7 +36,7 @@ func (t *Script) AddError(err error) {
 }
 
 /** Cmd creates a Cmd wrapper. */
-func (t *Script) Command(name string, args ...string) *Cmd {
+func (t *Script) Cmd(name string, args ...string) *Cmd {
 	return &Cmd{Cmd: exec.Command(name, args...), Script: t}
 }
 

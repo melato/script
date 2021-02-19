@@ -2,22 +2,48 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 
-	"melato.org/script"
+	"melato.org/script/v2"
 )
+
+func space() {
+	fmt.Println()
+	fmt.Println()
+}
 
 func main() {
 	s := script.Script{Trace: true}
 
-	s.Run("ls")
+	fmt.Println("Run:")
+	s.Run("ls", "-s")
 
+	space()
+	fmt.Println("redirect to file:")
 	s.Cmd("ls").ToFile("ls.out")
+
+	space()
+	fmt.Println("input string:")
+	s.Cmd("cat").InputString("hello").Run()
+
+	space()
+	fmt.Println("input bytes:")
+	s.Cmd("cat").InputBytes([]byte("bytes")).Run()
+
+	space()
+	fmt.Println("input file:")
+	s.Cmd("cat").InputFile("ls.out").Run()
+
+	space()
 	pwd := s.Cmd("pwd").ToString()
-	fmt.Println("pwd: '" + pwd + "'")
+	fmt.Println("output to string: '" + pwd + "'")
 
-	s.Cmd("ls", "-1").Pipe(s.Cmd("sort", "-r")).Run()
+	space()
+	fmt.Println("pipe two commands:")
+	s.RunCmd(exec.Command("ls", "-1"),
+		exec.Command("sort", "-r"))
 
-	if s.Error != nil {
-		fmt.Println(s.Error)
+	if err := s.Error(); err != nil {
+		fmt.Println(err)
 	}
 }

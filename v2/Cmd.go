@@ -12,10 +12,11 @@ import (
 
 // Cmd wraps exec.Cmd and adds convenience methods for redirecting stdin, stdout in various ways.
 type Cmd struct {
-	Cmd           *exec.Cmd
-	Script        *Script
-	stdin         input
-	combineOutput bool
+	Cmd             *exec.Cmd
+	Script          *Script
+	stdin           input
+	outputIndicator string
+	combineOutput   bool
 }
 
 // Dir sets Cmd.Dir
@@ -27,6 +28,12 @@ func (t *Cmd) Dir(dir string) *Cmd {
 // InputString sets Cmd.Stdin to the given string input
 func (t *Cmd) InputString(text string) *Cmd {
 	t.stdin = &stringInput{Text: text}
+	return t
+}
+
+// InputBytes sets Cmd.Stdin to the given []byte input
+func (t *Cmd) InputBytes(bytes []byte) *Cmd {
+	t.stdin = &bytesInput{Bytes: bytes}
 	return t
 }
 
@@ -42,16 +49,16 @@ func (t *Cmd) Run() {
 		return
 	}
 	if t.Script.Trace {
-		var suffix string
+		var inputIndicator string
 		var text []string
 		if t.stdin != nil {
 			text = t.stdin.TraceStrings()
 			if len(text) > 0 {
-				suffix = text[0]
+				inputIndicator = text[0]
 				text = text[1:]
 			}
 		}
-		fmt.Printf("%s%s\n", t.Cmd.String(), suffix)
+		fmt.Printf("%s%s%s\n", t.Cmd.String(), inputIndicator, t.outputIndicator)
 		for _, s := range text {
 			fmt.Println(s)
 		}
@@ -94,7 +101,7 @@ func (t *Cmd) ToFile(file string) {
 	if t.Script.HasError() {
 		return
 	}
-	fmt.Printf(" > %s\n", file)
+	t.outputIndicator = " > " + file
 	if t.Script.DryRun {
 		return
 	}
