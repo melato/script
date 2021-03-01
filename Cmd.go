@@ -2,6 +2,7 @@ package script
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,18 +11,34 @@ import (
 	"strings"
 )
 
-// Cmd wraps exec.Cmd and adds convenience methods for redirecting stdin, stdout in various ways.
+// Cmd wraps 0 or more exec.Cmd and adds convenience methods for redirecting stdin, stdout in various ways.
 type Cmd struct {
-	Cmd             *exec.Cmd
+	Commands        []*exec.Cmd
 	Script          *Script
 	stdin           input
 	outputIndicator string
 	combineOutput   bool
 }
 
-// Dir sets Cmd.Dir
+// Pipeline creates an empty pipeline
+func (t *Script) Pipeline() *Cmd {
+	return &Cmd{Script: t}
+}
+
+func (t *Cmd) Add(cmd *exec.Cmd) *Cmd {
+	t.Commands = append(t.Commands, cmd)
+	return t
+}
+
+func (t *Cmd) PipeTo(name string, arg ...string) *Cmd {
+	return t.Add(exec.Command(name, arg...))
+}
+
+// Dir sets Cmd.Dir for all commands so far.
 func (t *Cmd) Dir(dir string) *Cmd {
-	t.Cmd.Dir = dir
+	for _, cmd := range t.Commands {
+		cmd.Dir = dir
+	}
 	return t
 }
 
@@ -43,24 +60,46 @@ func (t *Cmd) InputFile(file string) *Cmd {
 	return t
 }
 
+func (t *Cmd) validateCommands() bool {
+	if t.Script.HasError() {
+		return false
+	}
+	if len(t.Commands) > 0 {
+		return true
+	}
+	t.Script.AddError(errors.New("no commands"))
+	return false
+}
+
 // Run runs and/or prints the command, applying any specified redirections
 func (t *Cmd) Run() {
-	if t.Script.HasError() {
+	if !t.validateCommands() {
 		return
 	}
 	if t.Script.Trace {
 		var inputIndicator string
-		var text []string
+		var inputText []string
 		if t.stdin != nil {
-			text = t.stdin.TraceStrings()
-			if len(text) > 0 {
-				inputIndicator = text[0]
-				text = text[1:]
+			inputText = t.stdin.TraceStrings()
+			if len(inputText) > 0 {
+				inputIndicator = inputText[0]
+				inputText = inputText[1:]
 			}
 		}
-		fmt.Printf("%s%s%s\n", t.Cmd.String(), inputIndicator, t.outputIndicator)
-		for _, s := range text {
-			fmt.Println(s)
+		n := len(t.Commands)
+		for i, cmd := range t.Commands {
+			var out string
+			if i == n-1 {
+				out = t.outputIndicator
+			}
+			if i == 0 {
+				fmt.Printf("%s%s%s\n", cmd.String(), inputIndicator, out)
+				for _, s := range inputText {
+					fmt.Println(s)
+				}
+			} else {
+				fmt.Printf("| %s%s\n", cmd.String(), out)
+			}
 		}
 	}
 	if t.Script.DryRun {
@@ -68,7 +107,7 @@ func (t *Cmd) Run() {
 	}
 	if t.stdin != nil {
 		var err error
-		t.Cmd.Stdin, err = t.stdin.Open()
+		t.Commands[0].Stdin, err = t.stdin.Open()
 		if err != nil {
 			t.Script.AddError(err)
 			return
@@ -76,29 +115,31 @@ func (t *Cmd) Run() {
 		defer t.stdin.Close()
 	}
 	if t.combineOutput {
-		if t.Cmd.Stdout == nil {
-			t.Cmd.Stdout = os.Stdout
+		cmd := t.Commands[len(t.Commands)-1]
+		if cmd.Stdout == nil {
+			cmd.Stdout = os.Stdout
 		}
-		t.Cmd.Stderr = t.Cmd.Stdout
+		cmd.Stderr = cmd.Stdout
 	}
-	t.Script.AddError(Run(t.Cmd))
+	t.Script.AddError(Run(t.Commands...))
 }
 
 // ToWriter redirects the output to an io.Writer and runs the command
 func (t *Cmd) ToWriter(out io.Writer) {
-	if t.Script.HasError() {
+	if !t.validateCommands() {
 		return
 	}
-	t.Cmd.Stdout = out
+	cmd := t.Commands[len(t.Commands)-1]
+	cmd.Stdout = out
 	if t.combineOutput {
-		t.Cmd.Stderr = out
+		cmd.Stderr = out
 	}
 	t.Run()
 }
 
 // ToFile redirects the output to a file, runs the command, and closes the file
 func (t *Cmd) ToFile(file string) {
-	if t.Script.HasError() {
+	if !t.validateCommands() {
 		return
 	}
 	t.outputIndicator = " > " + file

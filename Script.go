@@ -35,9 +35,9 @@ func (t *Script) AddError(err error) {
 	t.Errors.Add(err)
 }
 
-/** Cmd creates a Cmd wrapper. */
+// Cmd creates a Pipeline with one command.
 func (t *Script) Cmd(name string, args ...string) *Cmd {
-	return &Cmd{Cmd: exec.Command(name, args...), Script: t}
+	return t.Pipeline().Add(exec.Command(name, args...))
 }
 
 /** Create a command and run it or print it */
