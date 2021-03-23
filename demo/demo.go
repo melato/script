@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
 
 	"melato.org/script"
 )
@@ -40,8 +39,7 @@ func main() {
 
 	space()
 	fmt.Println("pipe two commands:")
-	s.RunCmd(exec.Command("ls", "-1"),
-		exec.Command("sort", "-r"))
+	s.Cmd("ls", "-1").PipeTo("sort", "-r").Run()
 
 	if err := s.Error(); err != nil {
 		fmt.Println(err)
