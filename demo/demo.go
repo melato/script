@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 func space() {
