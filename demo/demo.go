@@ -41,7 +41,7 @@ func main() {
 	fmt.Println("pipe two commands:")
 	s.Cmd("ls", "-1").PipeTo("sort", "-r").Run()
 
-	if err := s.Error(); err != nil {
-		fmt.Println(err)
+	if s.HasError() {
+		fmt.Println(s.Error())
 	}
 }
