@@ -25,11 +25,13 @@ func (t *Script) Pipeline() *Cmd {
 	return &Cmd{Script: t}
 }
 
+// Add - add an os/exec.Cmd to the command pipeline
 func (t *Cmd) Add(cmd *exec.Cmd) *Cmd {
 	t.Commands = append(t.Commands, cmd)
 	return t
 }
 
+// PipeTo - shortcut to Add(exec.Command(name, arg...))
 func (t *Cmd) PipeTo(name string, arg ...string) *Cmd {
 	return t.Add(exec.Command(name, arg...))
 }

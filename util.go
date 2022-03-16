@@ -5,8 +5,8 @@ import (
 	"bytes"
 )
 
-func BytesToLines(out []byte) []string {
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+func BytesToLines(data []byte) []string {
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 	var lines []string
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
@@ -14,8 +14,8 @@ func BytesToLines(out []byte) []string {
 	return lines
 }
 
-func IterateLines(out []byte, f func(string) error) error {
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+func IterateLines(data []byte, f func(string) error) error {
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		err := f(scanner.Text())
 		if err != nil {
