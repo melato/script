@@ -146,6 +146,7 @@ func (t *Cmd) ToFile(file string) {
 	}
 	t.outputIndicator = " > " + file
 	if t.Script.DryRun {
+		t.Run()
 		return
 	}
 	f, err := os.Create(file)
