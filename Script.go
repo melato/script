@@ -2,6 +2,8 @@ package script
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 )
 
@@ -14,14 +16,29 @@ import (
 */
 
 type Script struct {
-	Trace  bool // print exec arguments to stdout
-	DryRun bool
-	Errors Errors
+	Trace     bool // print exec arguments to stdout
+	DryRun    bool
+	logWriter io.Writer
+	Errors    Errors
 }
 
 /** Return true if an error has happened */
 func (t *Script) HasError() bool {
 	return t.Errors.HasError()
+}
+
+func (t *Script) SetLogWriter(w io.Writer) {
+	t.logWriter = w
+	t.Trace = true
+	fmt.Println("set log writer")
+}
+
+func (t *Script) LogWriter() io.Writer {
+	w := t.logWriter
+	if w == nil {
+		w = os.Stdout
+	}
+	return w
 }
 
 func (t *Script) Error() error {
@@ -51,12 +68,13 @@ func (t *Script) Run(name string, args ...string) {
 /** Run or print zero or more commands */
 func (t *Script) RunCmd(cmd ...*exec.Cmd) {
 	if t.Trace {
+		out := t.LogWriter()
 		for i, c := range cmd {
 			var prefix string
 			if i > 0 {
 				prefix = "| "
 			}
-			fmt.Printf("%s%s\n", prefix, c.String())
+			fmt.Fprintf(out, "%s%s\n", prefix, c.String())
 		}
 	}
 	if !t.DryRun {

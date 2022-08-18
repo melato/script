@@ -94,13 +94,14 @@ func (t *Cmd) Run() {
 			if i == n-1 {
 				out = t.outputIndicator
 			}
+			w := t.Script.LogWriter()
 			if i == 0 {
-				fmt.Printf("%s%s%s\n", cmd.String(), inputIndicator, out)
+				fmt.Fprintf(w, "%s%s%s\n", cmd.String(), inputIndicator, out)
 				for _, s := range inputText {
-					fmt.Println(s)
+					fmt.Fprintln(w, s)
 				}
 			} else {
-				fmt.Printf("| %s%s\n", cmd.String(), out)
+				fmt.Fprintf(w, "| %s%s\n", cmd.String(), out)
 			}
 		}
 	}
