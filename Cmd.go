@@ -56,9 +56,18 @@ func (t *Cmd) InputBytes(bytes []byte) *Cmd {
 	return t
 }
 
-// InputString sets Cmd.Stdin to the given file
+// InputFile sets Cmd.Stdin to the given file
 func (t *Cmd) InputFile(file string) *Cmd {
 	t.stdin = &fileInput{Path: file}
+	return t
+}
+
+// ErrorTo sets Cmd.Stderr to the given stream
+func (t *Cmd) ErrorTo(w io.Writer) *Cmd {
+	n := len(t.Commands)
+	if n > 0 {
+		t.Commands[n-1].Stderr = w
+	}
 	return t
 }
 

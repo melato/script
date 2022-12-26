@@ -27,9 +27,12 @@ func Run(cmd ...*exec.Cmd) error {
 	if last.Stdout == nil {
 		last.Stdout = os.Stdout
 	}
+	if last.Stderr == nil {
+		last.Stderr = os.Stderr
+	}
 	for _, c := range cmd {
 		if c.Stderr == nil {
-			c.Stderr = os.Stderr
+			c.Stderr = last.Stderr
 		}
 	}
 	var err error
